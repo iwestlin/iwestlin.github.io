@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Go</title>
+  <meta charset="utf-8">
+  <style type="text/css">
+  @font-face {
+    font-family: "go";
+    src: url("t.woff") format("woff"), /* chrome, firefox */
+    url("t.ttf") format("truetype"); /* chrome, firefox, opera, Safari, Android, iOS 4.2+ */
+  }
+
+  body {
+    text-align: center;
+  }
+  #board {
+    /*transform: rotate(180deg);*/
+    line-height: 1em;
+    font-size: 2em;
+    font-family: 'go';
+  }
+  </style>
+</head>
+<body>
+  <p>
+    分步落子<a href="steps.html">点此</a>
+    查看源码有惊喜……
+  </p>
+  <span>上传棋谱 sgf 文件：</span>
+  <input type="file" onchange="readText(this.files)">
+  <pre id="board">
+    ┌┬┬┬┬┬┬┬┬┬┬┬┬┬┬┐
+    ├┼┼┼┼●●┼┼┼┼┼┼┼┼┤
+    ├┼┼┼●┼┼●┼┼┼┼┼┼┼┤
+    ├┼┼┼●┼┼●┼┼┼┼┼┼┼┤
+    ├┼┼┼┼●●┼●●┼┼┼┼┼┤
+    ├┼┼┼┼┼┼●┼┼●┼┼┼┼┤
+    ├┼○○┼┼┼●┼┼┼●┼┼┼┤
+    ├○┼┼○○●○○○●●●┼┼┤
+    ├○┼┼○○┼┼┼○┼┼●┼┼┤
+    ├┼○○┼○┼┼┼○┼┼●┼┼┤
+    ├┼┼┼┼○┼┼┼○○○●●●┤
+    └┴┴┴┴┴┴┴┴┴┴┴┴┴┴┘
+  </pre>
+  <button onclick='alphago()'>Load AlphaGo Self Play #2</button>
+
+  <script type="text/javascript">
+    var boardArr, game, timeouts
+    var colors = {
+      W: '○',
+      B: '●'
+    }
+    // var index = 0
+    var width = 19
+    var reg = /[BW]\[([a-s]{2})\]/g
+    var board = document.getElementById('board')
+    window.onload = clear
+
+    function clear () {
+      if (timeouts) {
+        for (let i = 0; i < timeouts.length; i++) {
+          clearTimeout(timeouts[i])
+        }
+      }
+      genBoardArr()
+      board.innerText = flatten(boardArr).join('')
+    }
+
+    function getChar (i, j) { // i 为行，j 为列
+      var edge = width - 1
+      if (i === 0) {
+        if (j === 0) {
+          return '┌'
+        } else if (j === edge) {
+          return '┐'
+        } else {
+          return '┬'
+        }
+      } else if (i === edge) {
+        if (j === 0) {
+          return '└'
+        } else if (j === edge) {
+          return '┘'
+        } else {
+          return '┴'
+        }
+      } else if (j === 0) {
+        return '├'
+      } else if (j === edge) {
+        return '┤'
+      } else {
+        return '┼'
+      }
+    }
+    function flatten (arr) {
+      return Array.prototype.concat.apply([], arr)
+    }
+    function genBoardArr () {
+      boardArr = []
+      for (let i = 0; i < width; i++) {
+        var temp = []
+        for (let j = 0; j < width; j++) {
+          temp.push(getChar(i, j))
+        }
+        temp.push('\n')
+        boardArr.push(temp)
+      }
+    }
+    function draw (position) { // [16, 3, '●']
+      boardArr[position[1]][position[0]] = position[2]
+      // boardArr[position[1]][position[0]] = '<span>' + position[2] + '</span>'
+      if (position[2] === colors['B']) {
+        removeDead(colors['W'])
+        removeDead(colors['B'])
+      } else {
+        removeDead(colors['B'])
+        removeDead(colors['W'])
+      }
+      board.innerText = flatten(boardArr).join('')
+      // board.innerHTML = flatten(boardArr).join('')
+    }
+    function trans (pos, color) {
+      var line = 'abcdefghijklmnopqrs'
+      return [line.indexOf(pos[0]), line.indexOf(pos[1]), colors[color]]
+    }
+    function read (s) {
+      var game = []
+      var r
+      while (r = reg.exec(s)) {
+        game.push(trans(r[1], r[0][0])) // trans('qd', 'B')
+      }
+      return game
+    }
+    function start () {
+      timeouts = []
+      var delay = 500
+      for (let i = 0; i < game.length; i++) {
+        var t = setTimeout(function () {
+          draw(game[i])
+        }, i * delay)
+        timeouts.push(t)
+      }
+    }
+    function readText (files) {
+      clear()
+      var file = files[0]
+      var reader = new FileReader()
+      reader.onload = function (file) {
+        var s = this.result
+        game = read(s)
+        start()
+      }
+      reader.readAsText(file)
+    }
+    function alphago () {
+      clear()
+      var s = ';B[pd];W[dd];B[pp];W[dp];B[pj];W[nc];B[pf];W[nq];B[pn];W[oo];B[po];W[pr];B[fc];W[cf];B[oc];W[qc];B[nb];W[rf];B[rg];W[qg];B[re];W[rh];B[rj];W[fq];B[fe];W[mb];B[mc];W[nd];B[lb];W[ec];B[fb];W[og];B[ma];W[oi];B[oj];W[dk];B[dg];W[cg];B[dh];W[ch];B[di];W[bj];B[lg];W[mi];B[ek];W[el];B[fl];W[em];B[nh];W[ni];B[ph];W[pg];B[oh];W[of];B[qf];W[pi];B[qi];W[qh];B[mh];W[sg];B[qd];W[li];B[se];W[le];B[md];W[si];B[ri];W[jh];B[kf];W[if];B[ke];W[gg];B[fk];W[dj];B[il];W[ef];B[fm];W[id];B[hi];W[kd];B[me];W[ll];B[gp];W[en];B[fn];W[hc];B[ig];W[ih];B[hf];W[hg];B[ie];W[he];B[jf];W[gf];B[ol];W[qq];B[cc];W[eb];B[cd];W[de];B[db];W[ea];B[be];W[iq];B[km];W[lm];B[jo];W[gq];B[cq];W[rk];B[ro];W[hp];B[ho];W[go];B[oq];W[or];B[np];W[hn];B[hm];W[dq];B[eo];W[do];B[mq];W[nr];B[io];W[fi];B[dr];W[er];B[ej];W[gn];B[in];W[fo];B[mo];W[lp];B[mp];W[gi];B[hj];W[lo];B[hh];W[if];B[gh];W[fh];B[hf];W[nl];B[nk];W[if];B[fg];W[om];B[pl];W[eg];B[hf];W[pe];B[qe];W[if];B[gm];W[fp];B[hf];W[pm];B[qm];W[nm];B[ql];W[kn];B[kl];W[kk];B[jk];W[jm];B[jl];W[jn];B[ff];W[ge];B[mr];W[im];B[gd];W[hd];B[eh];W[fd];B[ed];W[ee];B[fd];W[fa];B[kq];W[kp];B[dl];W[cl];B[rr];W[gb];B[kj];W[lj];B[ki];W[lh];B[mf];W[kh];B[hk];W[rq];B[sp];W[sq];B[ns];W[rs];B[qs];W[sr];B[ss];W[bb];B[cb];W[rs];B[bp];W[br];B[ss];W[qo];B[rs];W[op];B[on];W[sj];B[qj];W[rn];B[qn];W[rp];B[qp];W[so];B[jq];W[jp];B[qo];W[sl];B[rm];W[sm];B[sn];W[pq];B[no];W[rn];B[sf];W[nj];B[sn];W[da];B[ca];W[rn];B[mk];W[lk];B[sn];W[bc];B[ab];W[rn];B[lq];W[sn];B[ir];W[hr];B[is];W[ms];B[ls];W[kr];B[jr];W[ks];B[os];W[ps];B[ms];W[nn];B[oq];W[op];B[nf];W[sp];B[mn];W[ln];B[rl];W[sk];B[oe];W[sh];B[oo];W[ml];B[ng];W[mj];B[qk];W[ok];B[nk];W[mk];B[oq];W[mm];B[rg];W[op];B[rf];W[nk];B[oq];W[ba];B[bd];W[op];B[ip];W[hq];B[oq];W[bf];B[qr];W[ae];B[cr];W[bo];B[ei];W[ii];B[ij];W[ci];B[jd];W[jc];B[aa];W[ac];B[jb];W[je];B[co];W[bn];B[jd];W[if];B[fj];W[gc];B[cm];W[cn];B[hf];W[kc];B[ib];W[ic]'
+      game = read(s)
+      start()
+    }
+
+    function removeDead (type) { // 提子，改变 boardArr
+      var groups = group(type) // [[[2,0],[3,0],[3,1]], [[0,0]]]
+      for (let i = 0; i < groups.length; i++) {
+        var qi = 0
+        for (let j = 0; j < groups[i].length; j++) {
+          qi += getQi.apply(null, groups[i][j])
+        }
+        if (!qi) { // 如果整个group中没有棋子有气，则提掉此group
+          removeGroup(groups[i])
+        }
+      }
+    }
+    function removeGroup (arr) { // arr: [[2,0],[3,0],[3,1]]
+      for (var i = 0; i < arr.length; i++) {
+        var x = arr[i][0]
+        var y = arr[i][1]
+        boardArr[x][y] = getChar(x, y)
+      }
+    }
+    function group (type) { // type: 黑棋或白棋; 返回此type的group
+      var result = []
+      var checked = []
+      function getGroup (x, y) {
+        var temp = []
+        function connect (x, y) {
+          var str = x + '-' + y
+          if (checked.indexOf(str) < 0) {
+            checked.push(str)
+            temp.push([x, y])
+            if (boardArr[x - 1] && boardArr[x - 1][y] === type) {
+              connect(x - 1, y)
+            }
+            if (boardArr[x + 1] && boardArr[x + 1][y] === type) {
+              connect(x + 1, y)
+            }
+            if (boardArr[x][y - 1] === type) {
+              connect(x, y - 1)
+            }
+            if (boardArr[x][y + 1] === type) {
+              connect(x, y + 1)
+            }
+          }
+        }
+        connect(x, y)
+        result.push(temp)
+      }
+      for (let i = 0; i < boardArr.length; i++) {
+        for (let j = 0; j < boardArr[i].length; j++) {
+          if (checked.indexOf(i + '-' + j) < 0 && boardArr[i][j] === type) {
+            getGroup(i, j)
+            // 把与 (i, j) 相连接的棋子放入同一个数组中，将此数组 push 进 result，将这些棋子标记为 chekced
+          }
+        }
+      }
+      return result
+    }
+    function getQi (x, y) {
+      var n = 0
+      if (boardArr[x - 1] && '┌┬┐┼┤├└┘┴'.indexOf(boardArr[x - 1][y]) >= 0) { n++ }
+      if (boardArr[x + 1] && '┌┬┐┼┤├└┘┴'.indexOf(boardArr[x + 1][y]) >= 0) { n++ }
+      if ('┌┬┐┼┤├└┘┴'.indexOf(boardArr[x][y - 1]) >= 0) { n++ }
+      if ('┌┬┐┼┤├└┘┴'.indexOf(boardArr[x][y + 1]) >= 0) { n++ }
+      return n
+    }
+    // function Stone (x, y, type) {
+    //   this.x = x
+    //   this.y = y
+    //   this.type = type
+    // }
+    // function arrUnique (arr) {
+    //   arr = new Set(arr)
+    //   return Array.from(arr)
+    // }
+  </script>
+</body>
+</html>

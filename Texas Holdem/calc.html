@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>德州扑克胜率计算</title>
+  <meta charset="utf-8">
+  <style type="text/css">
+  * {
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    width: 90%;
+    max-width: 935px;
+    border: 1px dashed #666;
+    margin: 0 auto;
+    margin-top: 10px;
+    padding: 10px;
+    font-family: 'PingFang SC', Helvetica, Arial, Vernada, Tahoma, STXihei, "Microsoft YaHei", "Songti SC", SimSun, Heiti, sans-serif;
+    font-size: 16px;
+  }
+  
+  button:hover {
+    cursor: pointer;
+  }
+  
+  hr {
+    margin-top: 10px;
+  }
+  
+  button[disabled] {
+    cursor: not-allowed;
+  }
+
+  .link a {
+    text-decoration: none;
+    font-size: 1.5em;
+    border-bottom: 1px dashed blue;
+  }
+  .link {
+    margin: 10px;
+    text-align: center;
+  }
+  .quote {
+    border-left: 7px solid #b4d7e4;
+    padding-left: 10px;
+  }
+  
+  .imp {
+    border-color: #a00;
+  }
+
+  .container {
+    position: relative;
+  }
+  
+  .poker {
+    font-family: arial;
+    border: 1px solid #666;
+    border-radius: .1em;
+    box-shadow: .2em .2em .5em #333;
+    width: 66px;
+    height: 100px;
+    padding-left: 5px;
+    position: relative;
+    display: inline-block;
+    font-size: 1.5em;
+    margin-top: 7px;
+  }
+  
+  .container .poker:hover {
+    cursor: pointer;
+  }
+  
+  .poker:after {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    text-align: center;
+    line-height: 100px;
+    font-size: 3em;
+  }
+  
+  .spade {
+    color: black;
+  }
+  
+  .spade:after {
+    content: '♠';
+  }
+  
+  .heart {
+    color: red;
+  }
+  
+  .heart:after {
+    content: '♥';
+  }
+  
+  .club {
+    color: black;
+  }
+  
+  .club:after {
+    content: '♣';
+  }
+  
+  .diamond {
+    color: red;
+  }
+  
+  .diamond:after {
+    content: '♦';
+  }
+  
+  .container .selected {
+    background-color: rgba(0, 0, 0, .3);
+  }
+  
+  #mybutton {
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+  }
+  
+  #mybutton button {
+    width: 100px;
+    height: 100px;
+    background: #333;
+    color: #eee;
+    box-shadow: inset 0 0 1px 1px rgba(0, 0, 0, 0.1), 0 0 5px 1px rgba(90, 90, 90, 0.1), inset 0 35px 1px rgba(255, 255, 255, 0.1);
+    border: 5px dashed #ccc;
+    border-radius: 100px;
+    font-size: 1.5em;
+  }
+  
+  .cards span {
+    font-size: 1.5em;
+    display: inline-block;
+    position: relative;
+    top: 30px;
+    left: 20px;
+    height: 100px;
+  }
+  
+  #info {
+    padding: .3em;
+    font-family: sans-serif;
+  }
+  </style>
+  <script src="jquery-latest.js"></script>
+  <script src="jquery.tablesorter.js"></script>
+  <script src="underscore-min.js"></script>
+  <link rel="stylesheet" href="themes/blue/style.css">
+</head>
+
+<body>
+  <div class="quote">
+    德克萨斯扑克全称 Texas Hold'em poker，中文简称德州扑克。它是一种玩家对玩家的公共牌类游戏。德州扑克一共有52张牌，没有王牌。每个玩家分两张牌作为“底牌”，五张由荷官陆续朝上发出的公共牌。开始的时候，每个玩家会有两张面朝下的底牌。经过所有押注圈后，若仍不能分出胜负，游戏会进入“摊牌”阶段，也就是让所剩的玩家亮出各自的底牌以较高下，持大牌者获胜。
+  </div>
+  <br>
+  <div class="quote imp">
+    第一次请选择两张底牌，第二次再选两张底牌，第三次选择0～4张公共牌。选完后点击计算按钮计算胜率。由于性能问题不能穷举，电脑会随机选出10000种情况，然后根据结果算出胜率，计算结果与真实胜率存在约1%以内的误差。点击计算后大概几秒钟后会算出结果，请耐心等候。
+  </div>
+  <hr>
+  <div class="container">
+    <div id="黑桃_A" class="spade poker">A</div>
+    <div id="红桃_A" class="heart poker">A</div>
+    <div id="梅花_A" class="club poker">A</div>
+    <div id="方块_A" class="diamond poker">A</div>
+    <div id="黑桃_K" class="spade poker">K</div>
+    <div id="红桃_K" class="heart poker">K</div>
+    <div id="梅花_K" class="club poker">K</div>
+    <div id="方块_K" class="diamond poker">K</div>
+    <div id="黑桃_Q" class="spade poker">Q</div>
+    <div id="红桃_Q" class="heart poker">Q</div>
+    <div id="梅花_Q" class="club poker">Q</div>
+    <div id="方块_Q" class="diamond poker">Q</div>
+    <div id="黑桃_J" class="spade poker">J</div>
+    <div id="红桃_J" class="heart poker">J</div>
+    <div id="梅花_J" class="club poker">J</div>
+    <div id="方块_J" class="diamond poker">J</div>
+    <div id="黑桃_10" class="spade poker">10</div>
+    <div id="红桃_10" class="heart poker">10</div>
+    <div id="梅花_10" class="club poker">10</div>
+    <div id="方块_10" class="diamond poker">10</div>
+    <div id="黑桃_9" class="spade poker">9</div>
+    <div id="红桃_9" class="heart poker">9</div>
+    <div id="梅花_9" class="club poker">9</div>
+    <div id="方块_9" class="diamond poker">9</div>
+    <div id="黑桃_8" class="spade poker">8</div>
+    <div id="红桃_8" class="heart poker">8</div>
+    <div id="梅花_8" class="club poker">8</div>
+    <div id="方块_8" class="diamond poker">8</div>
+    <div id="黑桃_7" class="spade poker">7</div>
+    <div id="红桃_7" class="heart poker">7</div>
+    <div id="梅花_7" class="club poker">7</div>
+    <div id="方块_7" class="diamond poker">7</div>
+    <div id="黑桃_6" class="spade poker">6</div>
+    <div id="红桃_6" class="heart poker">6</div>
+    <div id="梅花_6" class="club poker">6</div>
+    <div id="方块_6" class="diamond poker">6</div>
+    <div id="黑桃_5" class="spade poker">5</div>
+    <div id="红桃_5" class="heart poker">5</div>
+    <div id="梅花_5" class="club poker">5</div>
+    <div id="方块_5" class="diamond poker">5</div>
+    <div id="黑桃_4" class="spade poker">4</div>
+    <div id="红桃_4" class="heart poker">4</div>
+    <div id="梅花_4" class="club poker">4</div>
+    <div id="方块_4" class="diamond poker">4</div>
+    <div id="黑桃_3" class="spade poker">3</div>
+    <div id="红桃_3" class="heart poker">3</div>
+    <div id="梅花_3" class="club poker">3</div>
+    <div id="方块_3" class="diamond poker">3</div>
+    <div id="黑桃_2" class="spade poker">2</div>
+    <div id="红桃_2" class="heart poker">2</div>
+    <div id="梅花_2" class="club poker">2</div>
+    <div id="方块_2" class="diamond poker">2</div>
+    <div id="mybutton">
+      <button id="select">选定</button>
+      <button id="calc">计算</button>
+    </div>
+  </div>
+  <hr>
+  <div id="chosen"></div>
+  <table id="myTable" class="tablesorter">
+    <thead>
+      <tr>
+        <th>玩家</th>
+        <!-- <th>牌型</th> -->
+        <th>胜率</th>
+      </tr>
+    </thead>
+    <tbody id="info">
+    </tbody>
+  </table>
+  <hr>
+  <div class="link">
+    <a href="../should-i-play-cards-today/" target="_blank">Should I Play Cards Today?</a>
+  </div>
+
+  <script type="text/javascript">
+  var pokers = document.querySelectorAll('.container .poker');
+  var selected = arrFullOfZero(52);
+  var player = 0;
+  var selectButton = document.getElementById('select');
+  var calcButton = document.getElementById('calc');
+  var chosen = document.getElementById('chosen');
+  var info = document.getElementById('info');
+
+  selectButton.onclick = selectCards(2, 3);
+
+  function selectCards(cardsNum, playersNum) {
+    return function() {
+      var selectedPokers = document.querySelectorAll('.container .selected');
+      var len = selectedPokers.length;
+      if ((player < (playersNum-1)) && len != cardsNum) {
+        alert('请仔细阅读说明');
+        return;
+      }
+      if (player >= playersNum) {
+        alert('玩家数不能大于'+(playersNum-1));
+        return;
+      } else {
+        var s = ''
+        s += '<div class="cards">';
+        for (var i = 0; i < len; i++) {
+          s += selectedPokers[i].outerHTML;
+        }
+        if (player < (playersNum-1)) {
+          s += '<span> Player ' + (player+1) + ' 的底牌</span><hr /></div>';
+        } else {
+          if (len < 5 && len >= 0) {
+            s += '<span> 公共牌</span><hr /></div>';
+          } else {
+            alert('请选择5张以下的公共牌！');
+            return;
+          }
+        }
+        player++;
+        chosen.innerHTML += s;
+        for (var i = 0; i < pokers.length; i++) {
+          pokers[i].className = pokers[i].className.replace(/selected/g,'');
+        }
+      }
+    }
+  }
+  function disableButtonAndCalc(boo, foo) {
+    if (boo) {
+      calcButton.disabled = 'true';
+      setTimeout(doCalc, 100);
+    } else {
+      calcButton.disabled = '';
+    }
+  }
+//需要求出 pubCards player1 player2，然后调用calcSoManyTimes(10000)
+  calcButton.onclick = function () {
+    disableButtonAndCalc(true, doCalc);
+    // doCalc();
+  }
+  function doCalc() {
+    // this.disabled = 'true';
+    winRecords = [0,0,0]; //p1赢，平局，p1赢
+    function calcSoManyTimes(N) {
+      var allSelectedCards = player1.concat(player2).concat(pubCards);
+      var leftCards = _.without(arrContact(allCards), ...arrContact(allSelectedCards));
+
+      for (var ii = 0; ii < N; ii++) {
+        var randomPickedCards = [];
+        var pubCardsCopy = pubCards.slice(0);
+        // console.log(pubCards);
+        var randomPickedNums = randomPick(leftCards.length, 5-pubCards.length);
+        // console.log(randomPickedNums);
+        for (var i = 0; i < randomPickedNums.length; i++) {
+          randomPickedCards.push(leftCards[randomPickedNums[i]]);
+        }
+        for (var i = 0; i < randomPickedCards.length; i++) {
+          pubCardsCopy.push(randomPickedCards[i].split('_'));
+        }
+        // console.log(pubCardsCopy, player1, player2);
+        whoWin(pubCardsCopy, player1, player2);
+      }
+      // console.log(winRecords);
+    }
+
+    var pubCards = [],
+        player1 = [],
+        player2 = [];
+    var cards = document.querySelectorAll('#chosen .cards');
+    var player1Cards = cards[0].getElementsByClassName('poker');
+    var player2Cards = cards[1].getElementsByClassName('poker');
+    if (cards[2]) {
+      var pub = cards[2].getElementsByClassName('poker');
+    } else {
+      var pub = [];
+    }
+    for (var i = 0; i < player1Cards.length; i++) {
+      player1.push(player1Cards[i].id.split('_'));
+    }
+    for (var i = 0; i < player2Cards.length; i++) {
+      player2.push(player2Cards[i].id.split('_'));
+    }
+    if (pub.length > 0) {
+      for (var i = 0; i < pub.length; i++) {
+        pubCards.push(pub[i].id.split('_'));
+      }
+    }
+    calcSoManyTimes(10000);
+
+    var s = '';
+    s += '<tr><td>1</td><td>' + winRecords[0]/10000 + '</td></tr>';
+    s += '<tr><td>2</td><td>' + winRecords[2]/10000 + '</td></tr>';
+    info.innerHTML = '';
+    info.innerHTML = s;
+    $("#myTable").trigger("update");
+    // this.disabled = '';
+    disableButtonAndCalc(false);
+  }
+
+
+  for (var i = 0; i < pokers.length; i++) {
+    pokers[i].onclick = triggerSelected(i);
+  }
+
+  function triggerSelected(i) {
+    return function() {
+      if (selected[i] == 0) {
+        pokers[i].className += ' selected';
+        selected[i] = 1;
+      } else {
+        pokers[i].className = pokers[i].className.replace(/selected/g,'');
+        selected[i] = 0;
+      }
+    }
+  }
+
+  var winRecords = [0,0,0];
+  var levels = ['高牌', '对子', '两对', '三条', '顺子', '同花', '葫芦', '四条', '同花顺'];
+  var suits = ['黑桃', '红桃', '梅花', '方块'];
+  var values = ["A", "K", "Q", "J", "10", "9", "8", "7", "6", "5", "4", "3", "2"];
+  var allCards = arrPlus(suits, values);
+
+  function arrPlus(a1, a2) {
+    var result = [];
+    for (var i = 0; i < a1.length; i++) {
+      for (var j = 0; j < a2.length; j++) {
+        result.push([a1[i], a2[j]]);
+      }
+    }
+    return result;
+  }
+
+  var player1 = [
+    ['红桃', '10'],
+    ['黑桃', '10']
+  ];
+  var player2 = [
+    ['梅花', '4'],
+    ['红桃', '4']
+  ];
+//   var pubCardsCopy = [
+//     ['方块', '8'],
+//     ['方块', '5'],
+//     ['黑桃', '4']
+//   ];
+// whoWin(pubCardsCopy, player1, player2);
+
+  function whoWin(pubCardsCopy, player1, player2) {
+    var combs = combination([0,1,2,3,4,5,6], 5);
+    var p1max = 0;
+    var p2max = 0;
+    var p1SevenCards = player1.concat(pubCardsCopy);
+    var p2SevenCards = player2.concat(pubCardsCopy);
+
+    for (var i = 0; i < combs.length; i++) {
+      var p1FiveCards = [];
+      var p2FiveCards = [];
+      for (var j = 0; j < 5; j++) {
+        p1FiveCards.push(p1SevenCards[combs[i][j]]);
+        p2FiveCards.push(p2SevenCards[combs[i][j]]);
+      }
+      // console.log(p2FiveCards);
+      var p1value = getCardsValue(p1FiveCards);
+      var p2value = getCardsValue(p2FiveCards);
+      // console.log(p2value);
+      if (p1max < p1value) {
+        p1max = p1value;
+      }
+      if (p2max < p2value) {
+        p2max = p2value;
+      }
+    }
+
+    if(p1max > p2max) {
+      winRecords[0] += 1;
+    }
+    if(p1max === p2max) {
+      winRecords[1] += 1;
+    } 
+    if(p1max < p2max) {
+      winRecords[2] += 1;
+    }
+    // console.log(p1max ,p2max);
+  }
+
+// 函数combination产生从arr中取num个元素的所有可能
+  function combination(arr, num) {
+    var r = [];
+    (function f(t, a, n) {
+      if (n == 0) {
+        return r.push(t);
+      }
+      for (var i = 0, l = a.length; i <= l - n; i++) {
+        f(t.concat(a[i]), a.slice(i + 1), n - 1);
+      }
+    })([], arr, num);
+    return r;
+  }
+
+  function arrContact(arr) {
+    var result = [];
+    for (var i = 0; i < arr.length; i++) {
+      result.push(arr[i].join('_'));
+    }
+    return result;
+  }
+
+  // function arrContactBack (arr) {
+  //   var result = [];
+  //   for (var i = 0; i < arr.length; i++) {
+  //     result.push(arr[i].split('_'));
+  //   }
+  //   return result;
+  // }
+
+  function arrFullOfZero(num) {
+    var a = [];
+    for (var i = 0; i < num; i++) {
+      a[i] = 0;
+    }
+    return a;
+  }
+
+  function arraylize(arr) {
+    var mysuits = arrFullOfZero(4);
+    var myvalues = arrFullOfZero(13);
+    for (var i = 0; i < arr.length; i++) {
+      // console.log(arr[i]);
+      if (suits.indexOf(arr[i][0]) > -1) {
+        mysuits[suits.indexOf(arr[i][0])] += 1;
+      }
+      if (values.indexOf(arr[i][1]) > -1) {
+        myvalues[values.indexOf(arr[i][1])] += 1;
+      }
+    }
+    // console.log('mysuits:' + mysuits + '  myvalues:' + myvalues);
+    return [mysuits, myvalues];
+  }
+
+  function detectTonghua(mysuits) {
+    for (var i = 0; i < mysuits.length; i++) {
+      if (mysuits[i] == 5) {
+        return true;
+      }
+    }
+  }
+
+  function detectShunzi(myvalues) {
+    var continueNum = 0;
+    for (var i = 0; i < myvalues.length; i++) {
+      if (myvalues[i] == 1) {
+        if (myvalues[i + 1] == 1) {
+          continueNum++;
+        }
+      }
+    }
+    return (continueNum == 4);
+  }
+
+  function detectSitiao(myvalues) {
+    var maxNum = Math.max(...myvalues);
+    if (maxNum == 4) {
+      return true;
+    }
+  }
+
+  function detectHulu(myvalues) {
+    var maxNum = Math.max(...myvalues);
+    var myvaluesCopy = myvalues.slice(0);
+    if (maxNum == 3) {
+      myvaluesCopy[myvaluesCopy.indexOf(maxNum)] = 0;
+      if (Math.max(...myvaluesCopy) == 2) {
+        return true;
+      }
+    }
+  }
+
+  function detectSantiao(myvalues) {
+    var maxNum = Math.max(...myvalues);
+    var myvaluesCopy = myvalues.slice(0);
+    if (maxNum == 3) {
+      myvaluesCopy[myvaluesCopy.indexOf(maxNum)] = 0;
+      if (Math.max(...myvaluesCopy) < 2) {
+        return true;
+      }
+    }
+  }
+
+  function detectLiangdui(myvalues) {
+    var maxNum = Math.max(...myvalues);
+    var myvaluesCopy = myvalues.slice(0);
+    if (maxNum == 2) {
+      myvaluesCopy[myvaluesCopy.indexOf(maxNum)] = 0;
+      if (Math.max(...myvaluesCopy) == 2) {
+        return true;
+      }
+    }
+  }
+
+  function detectDuizi(myvalues) {
+    var maxNum = Math.max(...myvalues);
+    var myvaluesCopy = myvalues.slice(0);
+    if (maxNum == 2) {
+      myvaluesCopy[myvaluesCopy.indexOf(maxNum)] = 0;
+      if (Math.max(...myvaluesCopy) < 2) {
+        return true;
+      }
+    }
+  }
+
+  function detectAShunzi(mysizes) {
+    return (mysizes.join('') == '1000000001111');
+  }
+
+  function detect(arr) { //判断牌型为levels[i]
+    var high = 0; //初始值为高牌
+    var arrValue = arr[1].join('');
+    var myArrValue = parseInt(arrValue);
+
+    function toNum(i) {
+      return 12 - parseInt(arr[1].indexOf(i));
+    }
+    if (detectTonghua(arr[0])) { //同花,同类可直接比大小
+      high = 5;
+      myArrValue = high * 1e13 + parseInt(arrValue);
+    }
+    if (detectShunzi(arr[1])) { //顺子，可比
+      high = 4;
+      myArrValue = high * 1e13 + parseInt(arrValue);
+    }
+    if (detectAShunzi(arr[1])) { //A,2,3,4,5
+      high = 4;
+      myArrValue = high * 1e13;
+    }
+    if (detectTonghua(arr[0]) && detectShunzi(arr[1])) { //同花顺，可比
+      high = 8;
+      myArrValue = high * 1e13 + parseInt(arrValue);
+    }
+    if (detectTonghua(arr[0]) && detectAShunzi(arr[1])) { //A,2,3,4,5
+      high = 8;
+      myArrValue = high * 1e13;
+    }
+    if (detectSitiao(arr[1])) { //四条，不可比
+      high = 7;
+      myArrValue = high * 1e13 + toNum(4) * 100 + toNum(1);
+    }
+    if (detectHulu(arr[1])) { //葫芦，不可比
+      high = 6;
+      myArrValue = high * 1e13 + toNum(3) * 100 + toNum(2);
+    }
+    if (detectSantiao(arr[1])) { //三条，不可比
+      high = 3;
+      myArrValue = high * 1e13 + toNum(3) * 1e11 + parseInt(arrValue) / 100;
+    }
+    if (detectLiangdui(arr[1])) { //两对，不可比
+      high = 2;
+      var arrCopy = arr[1].slice(0);
+      arrCopy[arrCopy.indexOf(1)] = 0;
+      myArrValue = high * 1e13 + parseInt(arrCopy.join('')) + (toNum(1)/100);
+    }
+    if (detectDuizi(arr[1])) { //对子，不可比
+      high = 1;
+      myArrValue = high * 1e13 + toNum(2) * 1e11 + parseInt(arrValue) / 100;
+    }
+    // console.log('i:' + high + '  arrValue:' + arrValue);
+    return [high, myArrValue];
+  }
+
+  function getCardsValue(arr) {
+    return detect(arraylize(arr))[1];
+  }
+
+  // detect(arraylize(arr1));
+  // detect(arraylize(arr2));
+
+  function randomPick(n, m) {
+    if (Math.abs(parseInt(n)) != n || Math.abs(parseInt(m)) != m || n < m || n == 0 || m == 0) {
+      console.log('randomPick的参数为两个正整数，且前者不能小于后者！');
+      return;
+    }
+    var result = [];
+    while (true) {
+      var r = Math.floor(Math.random() * n);
+      if (result.indexOf(r) == -1) {
+        result.push(r);
+      }
+      if (result.length == m) {
+        return result;
+      }
+    }
+  }
+
+  $(document).ready(function() {
+    $("#myTable").tablesorter();
+  });
+  </script>
+</body>
+
+</html>

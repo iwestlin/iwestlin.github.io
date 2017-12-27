@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Unicode QRcode</title>
+  <meta charset="utf-8">
+  <style type="text/css">
+  @font-face {
+    font-family: "qrcode";
+    src: url("a.woff") format("woff"),
+    url("a.ttf") format("truetype");
+  }
+  body {
+    width: 400px;
+    margin: 0 auto;
+    text-align: center;
+    margin-top: 30px;
+  }
+  
+  input {
+    width: 100%;
+  }
+  
+  pre {
+    font-family: 'qrcode', monospace;
+    font-size: 1.4em;
+    line-height: 1.2em;
+  }
+  </style>
+</head>
+
+<body>
+  <input type="text" onkeyup="gen(this.value)" placeholder="输入任意内容自动生成二维码">
+  <pre></pre>
+  <script src='qrcode.min.js'></script>
+  <script>
+  var pre = document.getElementsByTagName('pre')[0]
+  gen('http://code.viegg.com/')
+
+  function gen (str) {
+    var s = qrcodelib.create(str)
+    s = s.modules.data.join('')
+    var width = Math.round(Math.sqrt(s.length))
+    var matrix = []
+    for (let i = 0, index = 0; i < width; i++) {
+      matrix[i] = []
+      for (let j = 0; j < width; j++) {
+        matrix[i][j] = parseInt(s[index])
+        index++
+      }
+    }
+    var r = '\n'
+    for (let i = 0; i < matrix.length; i += 2) {
+      for (let j = 0; j < matrix[i].length; j++) {
+        if (matrix[i + 1]) {
+          if (matrix[i][j]) {
+            if (matrix[i + 1][j]) {
+              r += '█'
+            } else {
+              r += '▀'
+            }
+          } else {
+            if (matrix[i + 1][j]) {
+              r += '▄'
+            } else {
+              r += ' '
+            }
+          }
+        } else {
+          if (matrix[i][j]) {
+            r += '▀'
+          } else {
+            r += ' '
+          }
+        }
+      }
+      r += '\n'
+    }
+    pre.innerText = r
+  }
+  </script>
+</body>
+
+</html>

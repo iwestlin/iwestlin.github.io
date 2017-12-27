@@ -1,0 +1,49 @@
+﻿<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<style>
+body {
+  font-family: PingFang SC, Verdana, Helvetica Neue, Microsoft Yahei, Hiragino Sans GB, Microsoft Sans Serif, WenQuanYi Micro Hei, sans-serif;
+  text-align: center;
+}
+.container {
+  width: 310px;
+  margin: 0 auto;
+}
+table {
+  margin: 0 auto;
+  border-spacing: 10px;
+}
+</style>
+
+<body>
+  <div class="container">
+    <h1>浅塘 375 关</h1>
+    <p>
+      <a href="http://app.mi.com/details?id=com.ttzgame.pond">浅塘</a>
+      是一款解谜类 APP，一个个不同颜色的色块代表了拥挤在一个池塘里的一条条小鱼，小鱼只能前后移动，不能横向移动，将红色小鱼从最左边移到最右边则获得胜利。
+      可以用鼠标拖动色块进行移动。
+    </p>
+    <p>
+      点击「自动求解」按钮求出每一步解法。
+    </p>
+    <canvas id="myCanvas" width="300" height="300" onmousedown="mouseDown(event)" onmouseup="mouseUp(event)" style="border:5px solid #8C5125;">
+      您的浏览器不支持canvas标签，请使用chrome/firefox/safari等现代浏览器
+    </canvas>
+    <br>
+    <button type="button" onclick="FindPath()">自动求解</button>
+    <div id="info1"></div>
+    <div id="info2"></div>
+  </div>
+  <table id="deallist" border="0"></table>
+  <hr>
+  <p>
+    代码修改自 <a href="https://github.com/buck84/huarongdao/tree/master/huarongdaohtml5">huarongdaohtml5</a>
+  </p>
+  <script src="qiantang.js"></script>
+  <script type="text/javascript">
+    document.body.onload = DisplayGame;
+  </script>
+</body>
+
+</html>

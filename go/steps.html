@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Go</title>
+  <meta charset="utf-8">
+  <style type="text/css">
+  @font-face {
+    font-family: "go";
+    src: url("t.woff") format("woff"), /* chrome, firefox */
+    url("t.ttf") format("truetype"); /* chrome, firefox, opera, Safari, Android, iOS 4.2+ */
+  }
+
+  body {
+    text-align: center;
+  }
+/*  span {
+    color: red;
+  }*/
+  #board {
+    /*transform: rotate(180deg);*/
+    line-height: 1em;
+    font-size: 2em;
+    font-family: 'go';
+  }
+  #butts button {
+    width: 40px;
+    margin: 5px;
+  }
+  </style>
+</head>
+<body>
+  <p>
+    自动落子<a href="index.html">点此</a>
+    查看源码有惊喜……
+  </p>
+  <span>上传棋谱 sgf 文件：</span>
+  <input type="file" onchange="readText(this.files)">
+  <pre id="board">
+    ┌┬┬┬┬┬┬┬┬┬┬┬┬┬┬┐
+    ├┼┼┼┼●●┼┼┼┼┼┼┼┼┤
+    ├┼┼┼●┼┼●┼┼┼┼┼┼┼┤
+    ├┼┼┼●┼┼●┼┼┼┼┼┼┼┤
+    ├┼┼┼┼●●┼●●┼┼┼┼┼┤
+    ├┼┼┼┼┼┼●┼┼●┼┼┼┼┤
+    ├┼○○┼┼┼●┼┼┼●┼┼┼┤
+    ├○┼┼○○●○○○●●●┼┼┤
+    ├○┼┼○○┼┼┼○┼┼●┼┼┤
+    ├┼○○┼○┼┼┼○┼┼●┼┼┤
+    ├┼┼┼┼○┼┼┼○○○●●●┤
+    └┴┴┴┴┴┴┴┴┴┴┴┴┴┴┘
+  </pre>
+  <button onclick='alphago()'>load Google Deepmind Challenge Match #5</button>
+  <hr>
+  <div id="butts"></div>
+  <!-- <button onclick='step()'>step</button> -->
+  <script type="text/javascript">
+    var boardArr, game, timeouts
+    var colors = {
+      W: '○',
+      B: '●'
+    }
+    // var index = 0
+    var steps = []
+    var width = 19
+    var reg = /[BW]\[([a-s]{2})\]/g
+    var butts = document.getElementById('butts')
+    var board = document.getElementById('board')
+    window.onload = clear
+
+  function createSteps(s) { // s 是棋谱文件字符串
+    butts.innerHTML = ''
+    var game = read(s) // 包含了每一步落子的位置和颜色
+    for (let i = 0; i < game.length; i++) {
+      boardArr[game[i][1]][game[i][0]] = game[i][2]
+      if (game[i][2] === colors['B']) {
+        removeDead(colors['W'])
+        removeDead(colors['B'])
+      } else {
+        removeDead(colors['B'])
+        removeDead(colors['W'])
+      }
+      steps.push(flatten(boardArr).join(''))
+      var butt = document.createElement('button')
+      butt.innerText = i + 1
+      butt.onclick = function () {
+        getStep(i)
+      }
+      butts.appendChild(butt)
+    }
+    function getStep (n) {
+      board.innerText = steps[n]
+    }
+  }
+  function clear () {
+      if (timeouts) {
+        for (let i = 0; i < timeouts.length; i++) {
+          clearTimeout(timeouts[i])
+        }
+      }
+      genBoardArr()
+      board.innerText = flatten(boardArr).join('')
+    }
+
+    function getChar (i, j) { // i 为行，j 为列
+      var edge = width - 1
+      if (i === 0) {
+        if (j === 0) {
+          return '┌'
+        } else if (j === edge) {
+          return '┐'
+        } else {
+          return '┬'
+        }
+      } else if (i === edge) {
+        if (j === 0) {
+          return '└'
+        } else if (j === edge) {
+          return '┘'
+        } else {
+          return '┴'
+        }
+      } else if (j === 0) {
+        return '├'
+      } else if (j === edge) {
+        return '┤'
+      } else {
+        return '┼'
+      }
+    }
+    function flatten (arr) {
+      return Array.prototype.concat.apply([], arr)
+    }
+    function genBoardArr () {
+      boardArr = []
+      for (let i = 0; i < width; i++) {
+        var temp = []
+        for (let j = 0; j < width; j++) {
+          temp.push(getChar(i, j))
+        }
+        temp.push('\n')
+        boardArr.push(temp)
+      }
+    }
+    function draw (position) { // [16, 3, '●']
+      boardArr[position[1]][position[0]] = position[2]
+      // boardArr[position[1]][position[0]] = '<span>' + position[2] + '</span>'
+      if (position[2] === colors['B']) {
+        removeDead(colors['W'])
+        removeDead(colors['B'])
+      } else {
+        removeDead(colors['B'])
+        removeDead(colors['W'])
+      }
+      board.innerText = flatten(boardArr).join('')
+      // board.innerHTML = flatten(boardArr).join('')
+    }
+    function trans (pos, color) {
+      var line = 'abcdefghijklmnopqrs'
+      return [line.indexOf(pos[0]), line.indexOf(pos[1]), colors[color]]
+    }
+    function read (s) {
+      var game = []
+      var r
+      while (r = reg.exec(s)) {
+        game.push(trans(r[1], r[0][0])) // trans('qd', 'B')
+      }
+      return game
+    }
+    function start (s) {
+      createSteps(s)
+      // timeouts = []
+      // var delay = 500
+      // for (let i = 0; i < game.length; i++) {
+      //   var t = setTimeout(function () {
+      //     draw(game[i])
+      //   }, i * delay)
+      //   timeouts.push(t)
+      // }
+    }
+    function readText (files) {
+      clear()
+      var file = files[0]
+      var reader = new FileReader()
+      reader.onload = function (file) {
+        var s = this.result
+        game = read(s)
+        start(s)
+      }
+      reader.readAsText(file)
+    }
+    function alphago () {
+      clear()
+      var s = ';B[qd];W[dd];B[pq];W[dp];B[oc];W[po];B[qo];W[qn];B[qp];W[pm];B[nq];W[qe];B[pe];W[qf];B[rd];W[pf];B[ql];W[oe];B[pl];W[ol];B[om];W[ok];B[nm];W[qj];B[rn];W[gq];B[cf];W[fc];B[bd];W[ch];B[dh];W[di];B[dg];W[cc];B[ci];W[cj];B[bi];W[dj];B[bh];W[ml];B[mm];W[lm];B[nl];W[nk];B[ln];W[ll];B[kn];W[mn];B[mo];W[rm];B[rl];W[ro];B[sn];W[pn];B[oo];W[op];B[no];W[sm];B[pp];W[nc];B[nb];W[ob];B[pb];W[od];B[pc];W[mb];B[oa];W[mc];B[gd];W[gf];B[gc];W[fd];B[ge];W[ff];B[hf];W[hg];B[if];W[ig];B[id];W[jf];B[jb];W[jd];B[jc];W[je];B[gh];W[fb];B[gg];W[fe];B[hc];W[hi];B[jl];W[hb];B[gb];W[ga];B[ib];W[ha];B[ia];W[fa];B[ka];W[iq];B[ii];W[hh];B[hj];W[gi];B[gj];W[cn];B[dq];W[cq];B[fq];W[eq];B[fp];W[gp];B[do];W[co];B[ep];W[dr];B[er];W[dq];B[gr];W[fo];B[eo];W[fn];B[hr];W[in];B[ir];W[jq];B[kr];W[jr];B[js];W[kq];B[lr];W[lq];B[mq];W[mr];B[nr];W[ik];B[fi];W[fh];B[jk];W[ij];B[jj];W[il];B[jm];W[im];B[eh];W[fg];B[mj];W[lj];B[li];W[mi];B[lk];W[nj];B[kj];W[ei];B[bk];W[bj];B[aj];W[is];B[hs];W[so];B[rn];W[rk];B[sl];W[ai];B[ah];W[cl];B[bl];W[bm];B[dm];W[dn];B[cm];W[dl];B[em];W[en];B[fl];W[fj];B[bn];W[ak];B[al];W[fr];B[mh];W[ni];B[lg];W[ks];B[ls];W[bc];B[bo];W[bp];B[og];W[mf];B[nh];W[ph];B[ce];W[mk];B[sg];W[rg];B[gl];W[re];B[se];W[sf];B[rf];W[sh];B[ld];W[me];B[ac];W[ab];B[ad];W[cd];B[bf];W[kc];B[kb];W[oh];B[nf];W[lc];B[bb];W[cb];B[aa];W[gk];B[hl];W[hk];B[jh];W[kg];B[lf];W[kh];B[lh];W[le];B[kf];W[jg];B[ao];W[lj];B[ki];W[jn];B[km];W[sn];B[on];W[rp];B[rq];W[pk];B[qm];W[sf];B[sd];W[ma];B[na];W[ie];B[he];W[hq];B[ms];W[ko];B[lp];W[kp];B[lo];W[fs];B[ks];W[el];B[fm];W[hm];B[am];W[kk];B[ne];W[of];B[de];W[ap];B[ee];W[ed];B[ke];W[kd];B[pd];W[pg];B[ng];W[sk];B[rn];W[fk];B[kl];W[gm];B[bm];W[lk];B[ck];W[dk];B[qk];W[rj])'
+      game = read(s)
+      start(s)
+    }
+
+    function removeDead (type) { // 提子，改变 boardArr
+      var groups = group(type) // [[[2,0],[3,0],[3,1]], [[0,0]]]
+      for (let i = 0; i < groups.length; i++) {
+        var qi = 0
+        for (let j = 0; j < groups[i].length; j++) {
+          qi += getQi.apply(null, groups[i][j])
+        }
+        if (!qi) { // 如果整个group中没有棋子有气，则提掉此group
+          removeGroup(groups[i])
+        }
+      }
+    }
+    function removeGroup (arr) { // arr: [[2,0],[3,0],[3,1]]
+      for (var i = 0; i < arr.length; i++) {
+        var x = arr[i][0]
+        var y = arr[i][1]
+        boardArr[x][y] = getChar(x, y)
+      }
+    }
+    function group (type) { // type: 黑棋或白棋; 返回此type的group
+      var result = []
+      var checked = []
+      function getGroup (x, y) {
+        var temp = []
+        function connect (x, y) {
+          var str = x + '-' + y
+          if (checked.indexOf(str) < 0) {
+            checked.push(str)
+            temp.push([x, y])
+            if (boardArr[x - 1] && boardArr[x - 1][y] === type) {
+              connect(x - 1, y)
+            }
+             if (boardArr[x + 1] && boardArr[x + 1][y] === type) {
+              connect(x + 1, y)
+            }
+             if (boardArr[x][y - 1] === type) {
+              connect(x, y - 1)
+            }
+             if (boardArr[x][y + 1] === type) {
+              connect(x, y + 1)
+            }
+          }
+        }
+        connect(x, y)
+        result.push(temp)
+        // checked.push(x + '-' + y)
+      }
+      for (let i = 0; i < boardArr.length; i++) {
+        for (let j = 0; j < boardArr[i].length; j++) {
+          if (checked.indexOf(i + '-' + j) < 0 && boardArr[i][j] === type) {
+            getGroup(i, j) // 把与 (i, j) 相连接的棋子放入同一个数组中，将此数组 push 进 result，将这些棋子标记为 chekced
+          }
+        }
+      }
+      return result
+    }
+    function getQi (x, y) {
+      var n = 0
+      if (boardArr[x - 1] && '┌┬┐┼┤├└┘┴'.indexOf(boardArr[x - 1][y]) >= 0) { n++ }
+      if (boardArr[x + 1] && '┌┬┐┼┤├└┘┴'.indexOf(boardArr[x + 1][y]) >= 0) { n++ }
+      if ('┌┬┐┼┤├└┘┴'.indexOf(boardArr[x][y - 1]) >= 0) { n++ }
+      if ('┌┬┐┼┤├└┘┴'.indexOf(boardArr[x][y + 1]) >= 0) { n++ }
+      return n
+    }
+    // function Stone (x, y, type) {
+    //   this.x = x
+    //   this.y = y
+    //   this.type = type
+    // }
+    // function arrUnique (arr) {
+    //   arr = new Set(arr)
+    //   return Array.from(arr)
+    // }
+    // function step () {
+    //   draw(game[index++])
+    // }
+  </script>
+</body>
+</html>
