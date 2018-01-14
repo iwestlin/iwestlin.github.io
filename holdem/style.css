@@ -157,6 +157,7 @@ button[disabled] {
   font-family: sans-serif;
 }
 
+/* table */
 table#myTable {
   background-color: #CDCDCD;
   margin:10px 0pt 15px;
