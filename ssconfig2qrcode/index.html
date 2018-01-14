@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>shadowsocks配置生成二维码</title>
+  <meta charset="utf-8">
+  <style type="text/css">
+    body {
+      text-align: center;
+    }
+    #output div {
+      display: inline-block;
+      margin: 100px;
+    }
+  </style>
+</head>
+<body>
+<input type="text" id="hostname" placeholder="hostname">
+<input type="text" id="port" placeholder="port">
+<input type="text" id="password" placeholder="password">
+<input type="text" id="encryptType" placeholder="encryptType">
+<input type="text" id="protocol" placeholder="protocol">
+<input type="text" id="obfs" placeholder="obfs">
+<button onclick="generate()">generate</button>
+<div id="output">
+  <div id="ss">
+    <p>shadowsocks</p>
+  </div>
+  <div id="ssr">
+    <p>shadowsocksR</p>
+  </div>
+</div>
+
+<script src="./jquery.min.js"></script>
+<script type="text/javascript" src="./jquery.qrcode.min.js"></script>
+<script type="text/javascript">
+  function ss (hostname, port, password, encryptType) {
+    var s = (encryptType ? encryptType + ':' : '') + (password || '') + '@' + hostname + ':' + port
+    return 'ss://' + btoa(s)
+  }
+
+  function ssr (...args) { // hostname, port, protocol, encryptType, obfs, password
+    var last = args.length - 1
+    args[last] = btoa(args[last])
+    return 'ssr://' + btoa(args.join(':'))
+  }
+
+  function generate () {
+    var hn = document.getElementById('hostname').value
+    var pt = document.getElementById('port').value
+    var pwd = document.getElementById('password').value
+    if (!hn || !pt || !pwd) {
+      alert('必须填写服务器地址、端口号和密码！')
+      return
+    }
+    var et = document.getElementById('encryptType').value || 'aes-256-cfb'
+    var obfs = document.getElementById('obfs').value || 'http_simple'
+    var pro = document.getElementById('protocol').value || 'auth_aes128_sha1'
+    jQuery('#output canvas').remove()
+    jQuery('#ss').qrcode(ss(hn, pt, pwd, et))
+    jQuery('#ssr').qrcode(ssr(hn, pt, pro, et, obfs, pwd))
+  }
+</script>
+</body>
+</html>
