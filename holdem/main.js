@@ -132,7 +132,7 @@ function getPubCards () {
 }
 
 function getQuery () {
-  var link = 'https://viegg.chinacloudsites.cn/texas?hand='
+  var link = 'https://dataservice.viegg.com/texas?hand='
   return link + getHandCards() + '&pub=' + getPubCards()
 }
 
